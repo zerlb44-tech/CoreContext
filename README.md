@@ -1,112 +1,87 @@
-# CoreContext
+﻿# CoreContext
 
-[![Tests](https://img.shields.io/badge/tests-17%20passing-brightgreen)](tests/)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
-[![Token Savings](https://img.shields.io/badge/token%20savings-82.7%25-green)]()
+Инструмент для сжатия кода перед отправкой в LLM.
 
-AST-based token pruner for generating minimal LLM context files. Takes a codebase, analyzes import dependencies, and creates a compressed `.md` file with only the code needed for understanding.
+## Что это
 
-## Features
+Удаляет из кода всё, что LLM обычно не нужно для понимания:
 
-- **Smart import analysis** — topological sort to include only necessary files
-- **Docstring stripping** — removes module, class, and function docstrings
-- **Logging removal** — strips `logger.*()` and `logging.*()` calls
-- **Function body pruning** — replaces non-critical function bodies with `...`
-- **Import optimization** — keeps only imports that are actually used
-- **Token counting** — shows original vs. pruned token counts with % savings
-- **Rich terminal output** — colored tables, progress bars, summary card
-- **Respects .gitignore** — excludes files according to your project rules
+- Docstrings
+- Комментарии
+- logging/print()
+- Тела функций (заменяет на `...`)
+- Неиспользуемые импорты
 
-## Install
+Сохраняет:
+
+- Сигнатуры функций (имя, аргументы, типы)
+- Алгоритмы и логику
+- Структуру проекта
+
+## Результат
+
+В моём тесте: 7,541 → 1,307 токенов (**82.7% меньше**)
+
+Твой результат может быть другим, зависит от кода.
+
+## Установка
 
 ```bash
-pip install -e .
+pip install git+https://github.com/zerlb44-tech/CoreContext.git
 ```
 
-## Quick Start
+## Использование
 
 ```bash
 corecontext prune --dir . --output context.md
 ```
 
-This scans the current directory, builds a dependency graph, and writes `context.md` with pruned Python files.
+Получишь `context.md` с сжатым кодом.
 
-## Options
+## Опции
 
-```
---dir DIR                  Root directory to scan (default: .)
---output PATH              Output markdown file (default: context.md)
---critical FUNC            Keep function body intact (can repeat)
---keep-init/--prune-init   Keep or prune __init__ bodies (default: keep)
---no-strip-logging         Don't remove logging calls
---strip-print              Also remove print() statements
---no-optimize-imports      Keep all imports
---exclude PATTERN          Additional patterns to exclude (can repeat)
-```
+- `--critical FUNC` — не трогать эту функцию
+- `--strip-print` — удалить print() тоже
+- `--exclude DIR` — исключить папку
+- `--help` — показать все опции
 
-### Examples
+## Как работает
 
-```bash
-# Generate context for current project
-corecontext prune --dir .
+1. Находит все .py файлы
+2. Парсит импорты
+3. Строит граф зависимостей
+4. Для каждого файла удаляет лишнее через AST
+5. Выводит в Markdown
 
-# Keep specific functions intact
-corecontext prune --dir . --critical main --critical setup
-
-# Also strip print() calls
-corecontext prune --dir . --strip-print
-
-# Exclude additional directories
-corecontext prune --dir . --exclude docs/ --exclude tests/
-```
-
-## How It Works
-
-1. **File Discovery** — Recursively walks directory, respects .gitignore and default excludes
-2. **Dependency Graph** — Parses import statements (regular + relative) to build file dependencies
-3. **Topological Sort** — Orders files so dependencies come before dependents
-4. **AST Pruning** — For each file in order:
-   - Strip docstrings (module, class, function)
-   - Remove logging statements
-   - Replace non-critical function bodies with `...`
-   - Remove unused imports
-5. **Markdown Output** — Generates directory tree + annotated code sections
-
-## Test Coverage
+## Тесты
 
 ```bash
 PYTHONPATH=. pytest -v
 ```
 
-All 17 tests passing:
-- Parser: gitignore loading, file discovery, syntax error handling
-- Pruner: docstring removal, logging stripping, body pruning, import optimization
-- Graph: module resolution, dependency graphs, topological sorting
+17 тестов проходят.
 
-## Real-World Metrics
+## Ограничения
 
-Example run on a 10-file project:
+- Работает только с Python
+- Может слишком агрессивно сжимать (проверяй результат)
+- Не всегда правильно понимает, что "критично"
+- Сложная логика в функциях может быть утеряна
 
-```
-Files: 10
-Original: 7,541 tokens
-Pruned:   1,307 tokens
-Saved:    6,234 tokens (82.7%)
-```
+## Для кого
 
-Per-file reduction:
-- graph.py: 80.0%
-- parser.py: 85.0%
-- cli.py: 85.4%
-- test files: 90-94%
+- Если отправляешь код в LLM и упираешься в лимит токенов
+- Если хочешь быстро посмотреть структуру чужого проекта
+- Если нужно сохранить контекст проекта для позже
 
-## Contributing
+## Лицензия
 
-Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and guidelines.
+MIT. Можешь делать что угодно.
 
-## License
+## Связь
 
-MIT — see [LICENSE](LICENSE)
+GitHub: [zerlb44-tech/CoreContext](https://github.com/zerlb44-tech/CoreContext)
 
+---
 
+Если помогло —興 поставь. Если нашёл баг — напиши issue.
